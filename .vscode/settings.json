@@ -13,4 +13,11 @@
     "typescript.tsdk": "node_modules/typescript/lib",
     "javascript.preferences.importModuleSpecifier": "relative",
     "nxConsole.generateAiAgentRules": true,
+    "python-envs.pythonProjects": [
+        {
+            "path": "packages/pieces/custom",
+            "envManager": "ms-python.python:venv",
+            "packageManager": "ms-python.python:pip"
+        }
+    ],
 }

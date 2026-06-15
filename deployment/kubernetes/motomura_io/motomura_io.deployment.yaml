@@ -1,0 +1,214 @@
+apiVersion: "apps/v1"
+kind: "Deployment"
+metadata:
+  name: "motomura-io"
+  namespace: "motomura"
+  labels:
+    app: "motomura-io"
+spec:
+  replicas: 2
+  revisionHistoryLimit: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  selector:
+    matchLabels:
+      app: "motomura-io"
+  template:
+    metadata:
+      labels:
+        app: "motomura-io"
+    spec:
+      terminationGracePeriodSeconds: 600
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        fsGroupChangePolicy: "OnRootMismatch"
+      restartPolicy: Always
+      containers:
+        - name: "container"
+          image: asia-northeast1-docker.pkg.dev/motomuraplatform/motomura-io/motomura-io:v1
+          imagePullPolicy: Always
+          resources:
+            requests:
+              cpu: "1"
+              memory: "2Gi"
+
+            limits:
+              cpu: "2"
+              memory: "4Gi"
+          ports:
+            - containerPort: 80
+          env:
+            # ---------- Secrets (from motomura-app-secret) ----------
+            # NOTE: AP_WORKER_TOKEN intentionally NOT set here.
+            # docker-entrypoint.sh auto-generates a valid WORKER JWT from
+            # AP_JWT_SECRET, guaranteeing the token matches the signing secret.
+            - name: AP_JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: motomura-app-secret
+                  key: AP_JWT_SECRET
+            - name: AP_ENCRYPTION_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: motomura-app-secret
+                  key: AP_ENCRYPTION_KEY
+            - name: AP_POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: motomura-app-secret
+                  key: AP_POSTGRES_PASSWORD
+
+
+            - name: AP_POSTGRES_DATABASE
+              valueFrom:
+                secretKeyRef:
+                  name: motomura-app-secret
+                  key: AP_POSTGRES_DATABASE
+
+            - name: AP_POSTGRES_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: motomura-app-secret
+                  key: AP_POSTGRES_USERNAME
+
+            - name: AP_REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: motomura-app-secret
+                  key: AP_REDIS_PASSWORD
+
+            - name: AP_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: motomura-app-secret
+                  key: AP_API_KEY
+
+
+            - name: AP_QUEUE_UI_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: motomura-app-secret
+                  key: AP_QUEUE_UI_USERNAME
+            - name: AP_QUEUE_UI_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: motomura-app-secret
+                  key: AP_QUEUE_UI_PASSWORD
+
+            # ---------- Core / edition ----------
+            - name: AP_EDITION
+              value: "ce"
+            - name: AP_ENVIRONMENT
+              value: "dev"
+            - name: AP_EXECUTION_MODE
+              value: "UNSANDBOXED"
+            - name: AP_DISABLE_PLATFORM_ADMIN
+              value: "true"
+
+            # ---------- URLs ----------
+            - name: AP_FRONTEND_URL
+              value: "http://localhost:4200"
+            - name: AP_WEBHOOK_URL
+              value: "http://localhost:3000"
+
+            # ---------- Postgres (via cloud-sql-proxy sidecar) ----------
+            - name: AP_DB_TYPE
+              value: "POSTGRES"
+            - name: AP_POSTGRES_HOST
+              value: "127.0.0.1"
+            - name: AP_POSTGRES_PORT
+              value: "5432"
+            - name: AP_POSTGRES_USE_SSL
+              value: "false"
+
+            # ---------- Redis / queue ----------
+            - name: AP_QUEUE_MODE
+              value: "REDIS"
+            - name: AP_REDIS_TYPE
+              value: "STANDALONE"
+            - name: AP_REDIS_HOST
+              value: "redis"
+            - name: AP_REDIS_PORT
+              value: "6379"
+            - name: AP_REDIS_DB
+              value: "0"
+
+            # ---------- Queue UI ----------
+            - name: AP_QUEUE_UI_ENABLED
+              value: "true"
+
+            # ---------- Logging / misc ----------
+            - name: AP_LOG_LEVEL
+              value: "info"
+            - name: AP_LOG_PRETTY
+              value: "false"
+            - name: AP_TELEMETRY_ENABLED
+              value: "false"
+            - name: AP_TRIGGER_DEFAULT_POLL_INTERVAL
+              value: "1"
+            - name: AP_WEBHOOK_TIMEOUT_SECONDS
+              value: "30"
+            - name: AP_PIECES_SYNC_MODE
+              value: "OFFICIAL_AUTO"
+            - name: AP_LOAD_TRANSLATIONS_FOR_DEV_PIECES
+              value: "false"
+
+            - name: GOOGLE_APPLICATION_CREDENTIALS
+              value: /secrets/key.json
+
+          volumeMounts:
+            - name: nippou-service-account
+              mountPath: /secrets
+              readOnly: true
+
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 60
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 6
+
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 120
+            periodSeconds: 30
+            timeoutSeconds: 10
+            failureThreshold: 5
+
+        # ================= CLOUD SQL PROXY =================
+        - name: cloud-sql-proxy
+          image: gcr.io/cloud-sql-connectors/cloud-sql-proxy:2.14.1
+          args:
+            - "--port=5432"
+            - "motomuraplatform:asia-northeast1:motomura-platform-postgresql"
+          securityContext:
+            runAsNonRoot: true
+
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "200m"
+              memory: "256Mi"
+
+          volumeMounts:
+            - name: nippou-service-account
+              mountPath: /secrets
+              readOnly: true
+          env:
+            - name: GOOGLE_APPLICATION_CREDENTIALS
+              value: /secrets/key.json
+      volumes:
+        - name: nippou-service-account
+          secret:
+            secretName: nippou-service-account

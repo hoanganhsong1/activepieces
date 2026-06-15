@@ -1,0 +1,20 @@
+apiVersion: "v1"
+kind: "Service"
+metadata:
+  name: "motomura-io"
+  namespace: "motomura"
+  labels:
+    app: "motomura-io"
+  annotations:
+    cloud.google.com/backend-config: '{"default": "motomura-io-backendconfig"}'
+spec:
+  type: ClusterIP
+  selector:
+    app: "motomura-io"
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8069
+    - name: gevent
+      port: 8072
+      targetPort: 8072
