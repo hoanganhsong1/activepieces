@@ -89,3 +89,4 @@ deploy/terraform/**/.terraform.lock.hcl
 deploy/terraform/**/terraform.tfvars
 deploy/terraform/**/terraform-*.tfvars
 /packages/pieces/custom
+deployment/kubernetes/motomura_io/motomura_io.secret.yaml
