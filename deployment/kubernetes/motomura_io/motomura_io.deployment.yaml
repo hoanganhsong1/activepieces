@@ -150,7 +150,7 @@ spec:
             - name: AP_EDITION
               value: "ce"
             - name: AP_ENVIRONMENT
-              value: "dev"
+              value: "prod"
             - name: AP_EXECUTION_MODE
               value: "UNSANDBOXED"
             - name: AP_DISABLE_PLATFORM_ADMIN
@@ -158,9 +158,9 @@ spec:
 
             # ---------- URLs ----------
             - name: AP_FRONTEND_URL
-              value: "http://localhost:4200"
-            - name: AP_WEBHOOK_URL
-              value: "http://localhost:3000"
+              value: "https://motomura.io"
+            # - name: AP_WEBHOOK_URL
+            #   value: "http://localhost:3000"
 
             # ---------- Postgres (via cloud-sql-proxy sidecar) ----------
             - name: AP_DB_TYPE

@@ -5,4 +5,8 @@ docker push asia-northeast1-docker.pkg.dev/motomuraplatform/motomura-io/motomura
 
 openssl rand -hex 32
 
- kubectl -n motomura rollout restart auto-motomura-app
+kubectl -n motomura rollout restart auto-motomura-app
+
+kubectl get managedcertificate motomura-io-cert --namespace motomura
+kubectl describe managedcertificate motomura-io-cert --namespace motomura
+kubectl delete managedcertificate motomura-io-cert --namespace motomura
