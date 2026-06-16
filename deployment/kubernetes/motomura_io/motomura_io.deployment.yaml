@@ -28,6 +28,52 @@ spec:
         fsGroup: 1000
         fsGroupChangePolicy: "OnRootMismatch"
       restartPolicy: Always
+
+      # ============= CLOUD SQL PROXY (native sidecar) =============
+      # initContainer + restartPolicy: Always => Kubernetes starts it
+      # BEFORE the app container and waits for its startupProbe to pass,
+      # so 127.0.0.1:5432 is listening before the app boots. This removes
+      # the ECONNREFUSED 127.0.0.1:5432 startup race. Requires GKE 1.29+.
+      initContainers:
+        - name: cloud-sql-proxy
+          image: gcr.io/cloud-sql-connectors/cloud-sql-proxy:2.14.1
+          restartPolicy: Always
+          args:
+            - "--port=5432"
+            - "--health-check"
+            - "--http-address=0.0.0.0"
+            - "--http-port=9801"
+            - "motomuraplatform:asia-northeast1:motomura-platform-postgresql"
+          startupProbe:
+            httpGet:
+              path: /startup
+              port: 9801
+            periodSeconds: 5
+            failureThreshold: 12   # wait up to ~60s for the proxy to be ready
+          livenessProbe:
+            httpGet:
+              path: /liveness
+              port: 9801
+            periodSeconds: 30
+            timeoutSeconds: 10
+            failureThreshold: 5
+          securityContext:
+            runAsNonRoot: true
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "200m"
+              memory: "256Mi"
+          volumeMounts:
+            - name: nippou-service-account
+              mountPath: /secrets
+              readOnly: true
+          env:
+            - name: GOOGLE_APPLICATION_CREDENTIALS
+              value: /secrets/key.json
+
       containers:
         - name: "container"
           image: asia-northeast1-docker.pkg.dev/motomuraplatform/motomura-io/motomura-io:v1
@@ -43,61 +89,61 @@ spec:
           ports:
             - containerPort: 80
           env:
-            # ---------- Secrets (from motomura-app-secret) ----------
+            # ---------- Secrets (from motomura-io-secret) ----------
             # NOTE: AP_WORKER_TOKEN intentionally NOT set here.
             # docker-entrypoint.sh auto-generates a valid WORKER JWT from
             # AP_JWT_SECRET, guaranteeing the token matches the signing secret.
             - name: AP_JWT_SECRET
               valueFrom:
                 secretKeyRef:
-                  name: motomura-app-secret
+                  name: motomura-io-secret
                   key: AP_JWT_SECRET
             - name: AP_ENCRYPTION_KEY
               valueFrom:
                 secretKeyRef:
-                  name: motomura-app-secret
+                  name: motomura-io-secret
                   key: AP_ENCRYPTION_KEY
             - name: AP_POSTGRES_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: motomura-app-secret
+                  name: motomura-io-secret
                   key: AP_POSTGRES_PASSWORD
 
 
             - name: AP_POSTGRES_DATABASE
               valueFrom:
                 secretKeyRef:
-                  name: motomura-app-secret
+                  name: motomura-io-secret
                   key: AP_POSTGRES_DATABASE
 
             - name: AP_POSTGRES_USERNAME
               valueFrom:
                 secretKeyRef:
-                  name: motomura-app-secret
+                  name: motomura-io-secret
                   key: AP_POSTGRES_USERNAME
 
             - name: AP_REDIS_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: motomura-app-secret
+                  name: motomura-io-secret
                   key: AP_REDIS_PASSWORD
 
             - name: AP_API_KEY
               valueFrom:
                 secretKeyRef:
-                  name: motomura-app-secret
+                  name: motomura-io-secret
                   key: AP_API_KEY
 
 
             - name: AP_QUEUE_UI_USERNAME
               valueFrom:
                 secretKeyRef:
-                  name: motomura-app-secret
+                  name: motomura-io-secret
                   key: AP_QUEUE_UI_USERNAME
             - name: AP_QUEUE_UI_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: motomura-app-secret
+                  name: motomura-io-secret
                   key: AP_QUEUE_UI_PASSWORD
 
             # ---------- Core / edition ----------
@@ -168,7 +214,7 @@ spec:
 
           readinessProbe:
             httpGet:
-              path: /
+              path: /api/v1/health
               port: 80
             initialDelaySeconds: 60
             periodSeconds: 10
@@ -177,37 +223,13 @@ spec:
 
           livenessProbe:
             httpGet:
-              path: /
+              path: /api/v1/health
               port: 80
             initialDelaySeconds: 120
             periodSeconds: 30
             timeoutSeconds: 10
             failureThreshold: 5
 
-        # ================= CLOUD SQL PROXY =================
-        - name: cloud-sql-proxy
-          image: gcr.io/cloud-sql-connectors/cloud-sql-proxy:2.14.1
-          args:
-            - "--port=5432"
-            - "motomuraplatform:asia-northeast1:motomura-platform-postgresql"
-          securityContext:
-            runAsNonRoot: true
-
-          resources:
-            requests:
-              cpu: "100m"
-              memory: "128Mi"
-            limits:
-              cpu: "200m"
-              memory: "256Mi"
-
-          volumeMounts:
-            - name: nippou-service-account
-              mountPath: /secrets
-              readOnly: true
-          env:
-            - name: GOOGLE_APPLICATION_CREDENTIALS
-              value: /secrets/key.json
       volumes:
         - name: nippou-service-account
           secret:
