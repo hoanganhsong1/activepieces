@@ -71,8 +71,13 @@ RUN --mount=type=cache,target=/root/.bun/install/cache \
 # Copy remaining source code (turbo config, etc.)
 COPY . .
 
-# Build frontend, engine, server API, and worker
-RUN npx turbo run build --filter=web --filter=@activepieces/engine --filter=api --filter=worker
+# Build frontend, engine, server API, and worker.
+# Also build the custom/dev pieces loaded at runtime via AP_DEV_PIECES so each
+# gets its dist/ folder (AP_DEV_PIECES reads packages/pieces/**/<name>/dist).
+RUN npx turbo run build --filter=web --filter=@activepieces/engine --filter=api --filter=worker \
+    --filter=@activepieces/piece-google-sheets \
+    --filter=@activepieces/piece-store \
+    --filter='./packages/pieces/custom/*'
 
 # Generate migration manifest (ordered list of migration names) for image-tag-based rollback
 RUN node -e "\
@@ -81,14 +86,23 @@ RUN node -e "\
   process.stdout.write(JSON.stringify(names));\
 " > packages/server/api/dist/src/migration-manifest.json
 
-# Remove piece directories not needed at runtime (keeps only the 4 pieces api imports)
-# Then regenerate bun.lock so it matches the trimmed workspace
-RUN rm -rf packages/pieces/core packages/pieces/custom && \
-    find packages/pieces/community -mindepth 1 -maxdepth 1 -type d \
+# Remove piece directories not needed at runtime.
+# Keep: community pieces imported by api (slack, square, facebook-leads, intercom)
+# plus the official pieces loaded via AP_DEV_PIECES: google-sheets (community)
+# and store (core). The ENTIRE packages/pieces/custom folder is retained so that
+# any custom piece you drop in there ships in the image (no Dockerfile edit needed
+# per piece) — just add its folder name to AP_DEV_PIECES.
+# (framework/ and common/ live at packages/pieces/ level, so they are untouched.)
+# Then regenerate bun.lock so it matches the trimmed workspace.
+RUN find packages/pieces/community -mindepth 1 -maxdepth 1 -type d \
       ! -name slack \
       ! -name square \
       ! -name facebook-leads \
       ! -name intercom \
+      ! -name google-sheets \
+      -exec rm -rf {} + && \
+    find packages/pieces/core -mindepth 1 -maxdepth 1 -type d \
+      ! -name store \
       -exec rm -rf {} + && \
     rm -f bun.lock && bun install
 
@@ -102,8 +116,15 @@ COPY --from=build /usr/src/app/packages/server/api/src/assets/default.cf /usr/lo
 COPY docker-entrypoint.sh .
 
 # Create all necessary directories in one layer
+# /usr/src/app/cache is written at runtime by the worker (piece/flow/engine
+# cache). The pod runs as UID 1000 (see deployment securityContext), but the
+# image is built as root, so this dir must be owned by 1000 or mkdir fails with
+# EACCES when publishing/enabling a flow.
 RUN mkdir -p \
-    /usr/src/app/dist/packages/engine && \
+    /usr/src/app/dist/packages/engine \
+    /usr/src/app/cache && \
+    chown -R 1000:1000 /usr/src/app/cache && \
+    chmod -R 775 /usr/src/app/cache && \
     chmod +x docker-entrypoint.sh
 
 # Copy root config files needed for dependency resolution

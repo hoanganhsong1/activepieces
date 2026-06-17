@@ -1,7 +1,7 @@
 docker builder prune -f
 docker build --no-cache --platform linux/amd64,linux/arm64 -t motomura-io .
-docker tag auto-motomura-app asia-northeast1-docker.pkg.dev/motomuraplatform/motomura-io/motomura-io:v1
-docker push asia-northeast1-docker.pkg.dev/motomuraplatform/motomura-io/motomura-io:v1
+docker tag motomura-io asia-northeast1-docker.pkg.dev/motomuraplatform/motomura-io/motomura-io:v6
+docker push asia-northeast1-docker.pkg.dev/motomuraplatform/motomura-io/motomura-io:v6
 
 openssl rand -hex 32
 
@@ -10,3 +10,14 @@ kubectl -n motomura rollout restart auto-motomura-app
 kubectl get managedcertificate motomura-io-cert --namespace motomura
 kubectl describe managedcertificate motomura-io-cert --namespace motomura
 kubectl delete managedcertificate motomura-io-cert --namespace motomura
+
+gcloud auth login
+gcloud config set project motomuraplatform
+gcloud container clusters get-credentials motomura-cluster \
+  --region asia-northeast1 \
+  --project motomuraplatform
+
+npm run build-piece
+npx turbo run build --filter=@activepieces/piece-chatwork
+
+https://motomura.io/api

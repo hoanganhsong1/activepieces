@@ -76,7 +76,7 @@ spec:
 
       containers:
         - name: "container"
-          image: asia-northeast1-docker.pkg.dev/motomuraplatform/motomura-io/motomura-io:v1
+          image: asia-northeast1-docker.pkg.dev/motomuraplatform/motomura-io/motomura-io:v6
           imagePullPolicy: Always
           resources:
             requests:
@@ -199,10 +199,29 @@ spec:
               value: "1"
             - name: AP_WEBHOOK_TIMEOUT_SECONDS
               value: "30"
+            - name: AP_PIECES_SOURCE
+              value: "FILE"
             - name: AP_PIECES_SYNC_MODE
               value: "OFFICIAL_AUTO"
             - name: AP_LOAD_TRANSLATIONS_FOR_DEV_PIECES
               value: "false"
+            - name: AP_MAILER_HOST
+              value: "smtp.sendgrid.net"
+            - name: AP_MAILER_PORT
+              value: "587"                       # 587 = STARTTLS, 465 = SSL
+            - name: AP_MAILER_USER
+              value: "apikey"
+            - name: AP_MAILER_SENDER_EMAIL
+              value: "noreply@motomura.io"
+            - name: AP_MAILER_SENDER_NAME
+              value: "Motomura"
+            - name: AP_DEV_PIECES
+              value: "google-sheets,store,chatwork,zalo"
+            - name: AP_MAILER_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: motomura-io-secret
+                  key: AP_SMTP_PASSWORD
 
             - name: GOOGLE_APPLICATION_CREDENTIALS
               value: /secrets/key.json
