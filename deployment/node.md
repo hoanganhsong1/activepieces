@@ -76,3 +76,25 @@ generate key AP_JWT_SECRET,
 openssl rand -hex 32
 generate key AP_ENCRYPTION_KEY,
 openssl rand -hex 16
+
+npm run
+npm run db-migration
+
+INITIAL DATABASE
+cd packages/server/api
+
+bun run \
+ts-node \
+--transpile-only \
+-r tsconfig-paths/register \
+-P tsconfig.app.json \
+node_modules/typeorm/cli.js migration:run \
+-d src/app/database/migration-data-source.ts
+
+npm run sync-pieces
+npm run sync-pieces -- -h http://localhost:3000
+
+npm run build-piece
+or cd packages/pieces/custom/chatwork
+npm run build
+rm -rf dev/cache

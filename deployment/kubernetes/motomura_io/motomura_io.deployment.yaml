@@ -61,11 +61,11 @@ spec:
             runAsNonRoot: true
           resources:
             requests:
-              cpu: "100m"
-              memory: "128Mi"
+              cpu: "500m"
+              memory: "3Gi"
             limits:
-              cpu: "200m"
-              memory: "256Mi"
+              cpu: "1"
+              memory: "3Gi"
           volumeMounts:
             - name: nippou-service-account
               mountPath: /secrets

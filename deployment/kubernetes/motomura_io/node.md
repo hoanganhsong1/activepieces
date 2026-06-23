@@ -17,7 +17,5 @@ gcloud container clusters get-credentials motomura-cluster \
   --region asia-northeast1 \
   --project motomuraplatform
 
-npm run build-piece
-npx turbo run build --filter=@activepieces/piece-chatwork
 
 https://motomura.io/api
