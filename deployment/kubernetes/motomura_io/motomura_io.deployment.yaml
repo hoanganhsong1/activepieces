@@ -76,7 +76,7 @@ spec:
 
       containers:
         - name: "container"
-          image: asia-northeast1-docker.pkg.dev/motomuraplatform/motomura-io/motomura-io:v6
+          image: asia-northeast1-docker.pkg.dev/motomuraplatform/motomura-io/motomura-io:v9
           imagePullPolicy: Always
           resources:
             requests:
@@ -204,7 +204,7 @@ spec:
             - name: AP_PIECES_SYNC_MODE
               value: "OFFICIAL_AUTO"
             - name: AP_LOAD_TRANSLATIONS_FOR_DEV_PIECES
-              value: "false"
+              value: "true"
             - name: AP_MAILER_HOST
               value: "smtp.sendgrid.net"
             - name: AP_MAILER_PORT
@@ -216,7 +216,7 @@ spec:
             - name: AP_MAILER_SENDER_NAME
               value: "Motomura"
             - name: AP_DEV_PIECES
-              value: "google-sheets,store,chatwork,zalo"
+              value: "google-sheets,store,chatwork,motomura"
             - name: AP_MAILER_PASSWORD
               valueFrom:
                 secretKeyRef:

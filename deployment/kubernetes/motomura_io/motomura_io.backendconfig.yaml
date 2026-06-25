@@ -4,7 +4,8 @@ metadata:
   name: motomura-io-backendconfig
   namespace: motomura
 spec:
-  timeoutSec: 300
+  # WebSocket connections are long-lived; 30s default resets Socket.IO.
+  timeoutSec: 3600
   connectionDraining:
     drainingTimeoutSec: 60
   healthCheck:
@@ -13,8 +14,8 @@ spec:
     healthyThreshold: 2
     unhealthyThreshold: 3
     type: HTTP
-    requestPath: /
-    port: 8069
+    requestPath: /api/v1/health
+    port: 80
   sessionAffinity:
     affinityType: "GENERATED_COOKIE"
     affinityCookieTtlSec: 3600

@@ -5,6 +5,10 @@ metadata:
   namespace: "motomura"
   labels:
     app: "motomura-io"
+  annotations:
+    # Link the BackendConfig so its 3600s timeout + session affinity actually apply.
+    # Without this the GCE LB uses a 30s timeout and resets WebSockets.
+    cloud.google.com/backend-config: '{"default": "motomura-io-backendconfig"}'
 spec:
   type: ClusterIP
   selector:

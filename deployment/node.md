@@ -40,9 +40,10 @@ ln -s /Users/hoanganhsong/Projects/SONG/javitalk/javitalk_automation/pieces/piec
 
 npm ls -g --depth=0
 cd pieces/piece-chatwork && npm run build
-npx turbo run build --filter=@activepieces/chatwork
 npx nx build pieces-zalo
 npx turbo run build --filter=@activepieces/piece-zalo
+npx turbo run build --filter=@activepieces/piece-chatwork
+npx turbo run build --filter=@activepieces/piece-motomura
 
 cd piece-chatwork
 npm link
