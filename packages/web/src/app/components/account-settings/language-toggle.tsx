@@ -110,7 +110,8 @@ export const LanguageToggle = () => {
           </Command>
         </PopoverContent>
       </Popover>
-      {showCommunity && (
+      {/* TODO:SONG COMMENTS */}
+      {/* {showCommunity && (
         <div className="pt-1">
           <Link
             className="text-xs text-primary hover:underline font-medium"
@@ -121,7 +122,7 @@ export const LanguageToggle = () => {
             {t('Help translate Activepieces →')}
           </Link>
         </div>
-      )}
+      )} */}
     </div>
   );
 };

@@ -68,16 +68,17 @@ export const RequestTrial = ({
       '_blank',
       'noopener noreferrer',
     );
-
-  return (
-    <AnimatedIconButton
-      variant={buttonVariant}
-      size={buttonSize}
-      onClick={handleClick}
-      icon={SendIcon}
-      iconSize={14}
-    >
-      {t('Contact Sales')}
-    </AnimatedIconButton>
-  );
+  return (<div></div>);
+  // TODO:SONG COMMENTS
+  // return (
+  //   <AnimatedIconButton
+  //     variant={buttonVariant}
+  //     size={buttonSize}
+  //     onClick={handleClick}
+  //     icon={SendIcon}
+  //     iconSize={14}
+  //   >
+  //     {t('Contact Sales')}
+  //   </AnimatedIconButton>
+  // );
 };

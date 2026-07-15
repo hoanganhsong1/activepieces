@@ -44,6 +44,7 @@ npx nx build pieces-zalo
 npx turbo run build --filter=@activepieces/piece-zalo
 npx turbo run build --filter=@activepieces/piece-chatwork
 npx turbo run build --filter=@activepieces/piece-motomura
+npx turbo run build --filter=@activepieces/piece-kingoftime
 
 cd piece-chatwork
 npm link
@@ -57,6 +58,12 @@ cd activepieces
 npm run dev
 npm run dev:backend
 npm run dev:frontend
+npm run dev:api
+
+npm run serve:backend
+npm run serve:worker
+npm run serve:frontend
+npm run serve:engine
 
 Email: dev@ap.com Password: 12345678
 
@@ -99,3 +106,12 @@ npm run build-piece
 or cd packages/pieces/custom/chatwork
 npm run build
 rm -rf dev/cache
+
+rm -rf .activepieces
+rm -rf .pglite
+rm -rf node_modules/.cache
+rm -rf node_modules/.bun
+rm -rf ~/.bun/install/cache
+rm -rf ~/.pglite
+
+rm -rf .activepieces .pglite node_modules/.cache node_modules/.bun ~/.bun/install/cache ~/.pglite

@@ -4,19 +4,17 @@ import {
   ThirdPartyAuthnProvidersToShowMap,
 } from '@activepieces/shared';
 import { t } from 'i18next';
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 
 import { useTheme } from '@/components/providers/theme-provider';
 import { authenticationSession } from '@/lib/authentication-session';
 import { useRedirectAfterLogin } from '@/lib/navigation-utils';
-import { cn } from '@/lib/utils';
 
 import { FullLogo } from '../../../components/custom/full-logo';
 import { HorizontalSeparatorWithText } from '../../../components/ui/separator';
 import { flagsHooks } from '../../../hooks/flags-hooks';
 
-import { AuthAnimation } from './auth-animation';
 import { SamlLoginForm } from './saml-login-form';
 import { SignInForm } from './sign-in-form';
 import { SignUpForm } from './sign-up-form';
@@ -113,23 +111,6 @@ const AuthSeparator = ({
   ) : null;
 };
 
-const AuthImage = () => {
-  const [loaded, setLoaded] = useState(false);
-  const onLoad = useCallback(() => setLoaded(true), []);
-
-  return (
-    <img
-      src="https://cdn.activepieces.com/assets/auth-bg.webp"
-      alt=""
-      onLoad={onLoad}
-      className={cn(
-        'absolute inset-0 w-full h-full object-cover transition-opacity duration-300',
-        loaded ? 'opacity-100' : 'opacity-0',
-      )}
-    />
-  );
-};
-
 const AuthLayout = ({
   children,
   isSignUp,
@@ -144,8 +125,8 @@ const AuthLayout = ({
   }, [setForceLightMode]);
   return (
     <div className="h-screen w-full overflow-hidden flex bg-white relative">
-      {/* Form — left side */}
-      <div className="flex flex-col w-full lg:w-1/2 p-5 lg:px-[100px]">
+      {/* Form — centered, full width (slideshow panel removed) */}
+      <div className="flex flex-col w-full p-5 lg:px-[100px]">
         <div className="pt-3 flex justify-center">
           <FullLogo />
         </div>
@@ -157,13 +138,6 @@ const AuthLayout = ({
             <TermsFooter />
           </div>
         )}
-      </div>
-
-      {/* Right side — animation for sign-up, image for sign-in */}
-      <div className="hidden lg:flex w-1/2 py-5 pr-5">
-        <div className="relative w-full h-full rounded-2xl overflow-hidden bg-muted">
-          {isSignUp ? <AuthAnimation /> : <AuthImage />}
-        </div>
       </div>
     </div>
   );

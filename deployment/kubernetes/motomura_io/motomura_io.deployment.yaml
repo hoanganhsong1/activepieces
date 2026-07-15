@@ -76,7 +76,7 @@ spec:
 
       containers:
         - name: "container"
-          image: asia-northeast1-docker.pkg.dev/motomuraplatform/motomura-io/motomura-io:v9
+          image: asia-northeast1-docker.pkg.dev/motomuraplatform/motomura-io/motomura-io:v15
           imagePullPolicy: Always
           resources:
             requests:
@@ -216,7 +216,9 @@ spec:
             - name: AP_MAILER_SENDER_NAME
               value: "Motomura"
             - name: AP_DEV_PIECES
-              value: "google-sheets,store,chatwork,motomura"
+              value: "chatwork,motomura,kingoftime"
+            - name: AP_TITLE
+              value: "MOTOMURA"
             - name: AP_MAILER_PASSWORD
               valueFrom:
                 secretKeyRef:

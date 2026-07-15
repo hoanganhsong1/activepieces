@@ -8532,6 +8532,36 @@
         "tslib": "2.6.2",
       },
     },
+    "packages/pieces/custom/kingoftime": {
+      "name": "@activepieces/piece-kingoftime",
+      "version": "0.0.1",
+      "dependencies": {
+        "@activepieces/pieces-common": "workspace:*",
+        "@activepieces/pieces-framework": "workspace:*",
+        "@activepieces/shared": "workspace:*",
+        "tslib": "2.6.2",
+      },
+    },
+    "packages/pieces/custom/motomura": {
+      "name": "@activepieces/piece-motomura",
+      "version": "0.0.1",
+      "dependencies": {
+        "@activepieces/pieces-common": "workspace:*",
+        "@activepieces/pieces-framework": "workspace:*",
+        "@activepieces/shared": "workspace:*",
+        "tslib": "2.6.2",
+      },
+    },
+    "packages/pieces/custom/seihon": {
+      "name": "@activepieces/piece-seihon",
+      "version": "0.0.1",
+      "dependencies": {
+        "@activepieces/pieces-common": "workspace:*",
+        "@activepieces/pieces-framework": "workspace:*",
+        "@activepieces/shared": "workspace:*",
+        "tslib": "2.6.2",
+      },
+    },
     "packages/pieces/custom/zalo": {
       "name": "@activepieces/piece-zalo",
       "version": "0.0.1",
@@ -9651,6 +9681,8 @@
 
     "@activepieces/piece-kimai": ["@activepieces/piece-kimai@workspace:packages/pieces/community/kimai"],
 
+    "@activepieces/piece-kingoftime": ["@activepieces/piece-kingoftime@workspace:packages/pieces/custom/kingoftime"],
+
     "@activepieces/piece-kissflow": ["@activepieces/piece-kissflow@workspace:packages/pieces/community/kissflow"],
 
     "@activepieces/piece-kizeo-forms": ["@activepieces/piece-kizeo-forms@workspace:packages/pieces/community/kizeo-forms"],
@@ -9838,6 +9870,8 @@
     "@activepieces/piece-motion": ["@activepieces/piece-motion@workspace:packages/pieces/community/motion"],
 
     "@activepieces/piece-motiontools": ["@activepieces/piece-motiontools@workspace:packages/pieces/community/motiontools"],
+
+    "@activepieces/piece-motomura": ["@activepieces/piece-motomura@workspace:packages/pieces/custom/motomura"],
 
     "@activepieces/piece-moveo-ai": ["@activepieces/piece-moveo-ai@workspace:packages/pieces/community/moveo-ai"],
 
@@ -10108,6 +10142,8 @@
     "@activepieces/piece-seek-table": ["@activepieces/piece-seek-table@workspace:packages/pieces/community/seek-table"],
 
     "@activepieces/piece-segment": ["@activepieces/piece-segment@workspace:packages/pieces/community/segment"],
+
+    "@activepieces/piece-seihon": ["@activepieces/piece-seihon@workspace:packages/pieces/custom/seihon"],
 
     "@activepieces/piece-send-it": ["@activepieces/piece-send-it@workspace:packages/pieces/community/send-it"],
 
