@@ -8,7 +8,7 @@ import {
 } from '@activepieces/shared';
 import { useQueryClient } from '@tanstack/react-query';
 import { t } from 'i18next';
-import { ChevronDown, CircleHelp, HistoryIcon } from 'lucide-react';
+import { ChevronDown, CircleHelp, HistoryIcon, Sparkles } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import {
   createSearchParams,
@@ -177,6 +177,14 @@ export const BuilderHeader = () => {
 
   const rightContent = (
     <div className="flex items-center justify-center gap-4">
+      <Button
+        variant="ghost"
+        onClick={() => setRightSidebar(RightSideBarType.COPILOT)}
+        className="gap-2 px-2"
+      >
+        <Sparkles className="w-4 h-4" />
+        {t('Ask AI')}
+      </Button>
       {showSupport && (
         <Button
           variant="ghost"

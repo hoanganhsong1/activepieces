@@ -3,6 +3,7 @@ export enum RightSideBarType {
   PIECE_SETTINGS = 'piece-settings',
   VERSIONS = 'versions',
   RUNS = 'runs',
+  COPILOT = 'copilot',
 }
 
 export enum ChatDrawerSource {

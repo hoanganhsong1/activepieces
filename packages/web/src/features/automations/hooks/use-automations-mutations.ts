@@ -11,6 +11,7 @@ import { useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 
+import { copilotApi } from '@/features/copilot/api/copilot-api';
 import { flowsApi } from '@/features/flows/api/flows-api';
 import { flowHooks } from '@/features/flows/hooks/flow-hooks';
 import { foldersApi } from '@/features/folders/api/folders-api';
@@ -54,6 +55,44 @@ export function useAutomationsMutations(deps: MutationDeps) {
       },
       onSuccess: (flow) => {
         navigate(`/flows/${flow.id}?${NEW_FLOW_QUERY_PARAM}=true`);
+      },
+    });
+
+  const { mutate: generateFlowWithAi, isPending: isGeneratingFlow } =
+    useMutation<PopulatedFlow, Error, { prompt: string; folderId?: string }>({
+      mutationFn: async ({ prompt, folderId }) => {
+        const generated = await copilotApi.generateFlow({ prompt });
+        const createdFlow = await flowsApi.create({
+          projectId,
+          displayName: generated.displayName || t('Untitled'),
+          folderId:
+            !folderId || folderId === UncategorizedFolderId
+              ? undefined
+              : folderId,
+        });
+        return flowsApi.update(createdFlow.id, {
+          type: FlowOperationType.IMPORT_FLOW,
+          request: {
+            displayName: generated.displayName || t('Untitled'),
+            trigger: generated.trigger,
+            schemaVersion: generated.schemaVersion,
+            notes: [],
+          },
+        });
+      },
+      onSuccess: (flow) => {
+        navigate(`/flows/${flow.id}?${NEW_FLOW_QUERY_PARAM}=true`);
+      },
+      onError: (error: unknown) => {
+        const description = (
+          error as {
+            response?: { data?: { params?: { message?: string } } };
+          }
+        )?.response?.data?.params?.message;
+        toast.error(
+          t('Failed to generate flow'),
+          description ? { description } : undefined,
+        );
       },
     });
 
@@ -291,9 +330,12 @@ export function useAutomationsMutations(deps: MutationDeps) {
 
   return {
     createFlow: (folderId?: string) => startFromScratch(folderId),
+    createFlowWithAi: (prompt: string, folderId?: string) =>
+      generateFlowWithAi({ prompt, folderId }),
     createTable: (name: string, folderId?: string) =>
       createTableMutation({ name, folderId }),
     isCreateFlowPending,
+    isGeneratingFlow,
     isCreatingTable,
     handleDeleteItem: deleteItem,
     handleBulkDelete: bulkDelete,

@@ -8,6 +8,7 @@ import { AiToolConfigEntity } from '../ai/ai-tool-config-entity'
 import { PlatformAnalyticsReportEntity } from '../analytics/platform-analytics-report.entity'
 import { AppConnectionEntity } from '../app-connection/app-connection.entity'
 import { UserIdentityEntity } from '../authentication/user-identity/user-identity-entity'
+import { CopilotConversationEntity } from '../copilot/copilot-conversation-entity'
 import { AlertEntity } from '../ee/alerts/alerts-entity'
 import { ApiKeyEntity } from '../ee/api-keys/api-key-entity'
 import { AppCredentialEntity } from '../ee/app-credentials/app-credentials.entity'
@@ -90,6 +91,7 @@ function getEntities(): EntitySchema<unknown>[] {
         UserInvitationEntity,
         AIProviderEntity,
         AiToolConfigEntity,
+        CopilotConversationEntity,
         ProjectRoleEntity,
         TableEntity,
         FieldEntity,

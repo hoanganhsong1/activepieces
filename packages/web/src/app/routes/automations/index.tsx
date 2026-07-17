@@ -12,6 +12,7 @@ import { AutomationsNoResultsState } from '@/features/automations/components/aut
 import { AutomationsPagination } from '@/features/automations/components/automations-pagination';
 import { AutomationsSelectionBar } from '@/features/automations/components/automations-selection-bar';
 import { AutomationsTable } from '@/features/automations/components/automations-table';
+import { CreateFlowWithAiDialog } from '@/features/automations/components/create-flow-with-ai-dialog';
 import { CreateFolderDialog } from '@/features/automations/components/create-folder-dialog';
 import { CreateInFolderKind } from '@/features/automations/components/create-new-menu';
 import { MoveToFolderDialog } from '@/features/automations/components/move-to-folder-dialog';
@@ -308,6 +309,7 @@ const AutomationsPageContent = ({ projectId }: { projectId: string }) => {
           dialogs.setImportTargetFolderId(undefined);
           dialogs.setIsImportTableDialogOpen(true);
         }}
+        onCreateWithAi={() => dialogs.setIsAiFlowDialogOpen(true)}
         onClearAllFilters={clearAllFilters}
         hasActiveFilters={filtersActive}
         isCreatingFlow={mutations.isCreateFlowPending}
@@ -395,6 +397,13 @@ const AutomationsPageContent = ({ projectId }: { projectId: string }) => {
         open={dialogs.isFolderDialogOpen}
         refetchFolders={() => invalidateAll()}
         onOpenChange={dialogs.setIsFolderDialogOpen}
+      />
+
+      <CreateFlowWithAiDialog
+        open={dialogs.isAiFlowDialogOpen}
+        onOpenChange={dialogs.setIsAiFlowDialogOpen}
+        isGenerating={mutations.isGeneratingFlow}
+        onSubmit={(prompt) => mutations.createFlowWithAi(prompt)}
       />
 
       <ImportFlowDialog

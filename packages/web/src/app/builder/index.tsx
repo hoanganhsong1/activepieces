@@ -27,6 +27,7 @@ import { useElementSize } from '@/hooks/use-element-size';
 import { cn } from '@/lib/utils';
 
 import { BuilderHeader } from './builder-header/builder-header';
+import { CopilotPanel } from './copilot/copilot-panel';
 import { FlowCanvas } from './flow-canvas';
 import { flowCanvasHooks } from './flow-canvas/hooks';
 import { flowCanvasConsts } from './flow-canvas/utils/consts';
@@ -234,6 +235,7 @@ const BuilderPage = () => {
               )}
             {rightSidebar === RightSideBarType.RUNS && <RunsList />}
             {rightSidebar === RightSideBarType.VERSIONS && <FlowVersionsList />}
+            {rightSidebar === RightSideBarType.COPILOT && <CopilotPanel />}
           </div>
         </ResizablePanel>
       </ResizablePanelGroup>

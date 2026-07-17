@@ -5,6 +5,7 @@ import {
   Sparkles,
   Table2,
   Upload,
+  Wand2,
   Workflow,
 } from 'lucide-react';
 import { useState } from 'react';
@@ -34,6 +35,7 @@ export const CreateNewMenu = ({
   onImportFlow,
   onImportTable,
   onSelectTemplate,
+  onCreateWithAi,
   onOpenChange,
 }: CreateNewMenuProps) => {
   const { embedState } = useEmbedding();
@@ -71,6 +73,22 @@ export const CreateNewMenu = ({
             {isCreatingFlow ? t('Creating...') : t('New Flow')}
           </DropdownMenuItem>
         </PermissionNeededTooltip>
+
+        {onCreateWithAi && (
+          <PermissionNeededTooltip hasPermission={userHasPermissionToWriteFlow}>
+            <DropdownMenuItem
+              disabled={!userHasPermissionToWriteFlow || busy}
+              onSelect={(e) => {
+                e.preventDefault();
+                onCreateWithAi();
+              }}
+              className="cursor-pointer"
+            >
+              <Wand2 className="h-4 w-4 mr-2" />
+              {t('Create with AI')}
+            </DropdownMenuItem>
+          </PermissionNeededTooltip>
+        )}
 
         {showTemplate && onSelectTemplate && (
           <PermissionNeededTooltip hasPermission={userHasPermissionToWriteFlow}>
@@ -179,6 +197,7 @@ type CreateNewMenuProps = {
   onImportFlow: () => void;
   onImportTable: () => void;
   onSelectTemplate?: () => void;
+  onCreateWithAi?: () => void;
   onOpenChange?: (open: boolean) => void;
 };
 

@@ -65,6 +65,7 @@ type AutomationsFiltersProps = {
   onCreateFolder: () => void;
   onImportFlow: () => void;
   onImportTable: () => void;
+  onCreateWithAi?: () => void;
   onClearAllFilters: () => void;
   hasActiveFilters: boolean;
   isCreatingFlow?: boolean;
@@ -96,6 +97,7 @@ export const AutomationsFilters = ({
   onCreateFolder,
   onImportFlow,
   onImportTable,
+  onCreateWithAi,
   onClearAllFilters,
   hasActiveFilters,
   isCreatingFlow = false,
@@ -305,6 +307,7 @@ export const AutomationsFilters = ({
               onCreateFolder={onCreateFolder}
               onImportFlow={onImportFlow}
               onImportTable={onImportTable}
+              onCreateWithAi={onCreateWithAi}
               onSelectTemplate={() => {
                 if (embedState.isEmbedded) {
                   setIsTemplatesBrowseDialogOpen(true);
