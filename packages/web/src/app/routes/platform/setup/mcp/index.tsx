@@ -37,7 +37,7 @@ export default function PlatformMcpPage() {
 
   const jsonConfiguration = {
     mcpServers: {
-      activepieces: {
+      motomura: {
         url: serverUrl,
       },
     },

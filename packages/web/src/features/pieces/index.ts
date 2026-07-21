@@ -36,6 +36,7 @@ export type {
   CategorizedStepMetadataWithSuggestions,
 } from './types';
 export { formUtils } from './utils/form-utils';
+export { getDisplayPackageName } from './utils/piece-branding-utils';
 export {
   PIECE_SELECTOR_ELEMENTS_HEIGHTS,
   pieceSelectorUtils,

@@ -20,7 +20,6 @@ import { useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 
 import { DashboardPageHeader } from '@/app/components/dashboard-page-header';
-import { RequestTrial } from '@/app/components/request-trial';
 import { CustomizeSelectorDialog } from '@/app/routes/platform/setup/pieces/customize-selector-dialog';
 import { PieceActions } from '@/app/routes/platform/setup/pieces/piece-actions';
 import { SyncPiecesButton } from '@/app/routes/platform/setup/pieces/sync-pieces';
@@ -28,11 +27,11 @@ import { ConfigurePieceOAuth2Dialog } from '@/app/routes/platform/setup/pieces/u
 import { DataTable, RowDataWithActions } from '@/components/custom/data-table';
 import { DataTableColumnHeader } from '@/components/custom/data-table/data-table-column-header';
 import { ConfirmationDeleteDialog } from '@/components/custom/delete-dialog';
-import { LockedAlert } from '@/components/custom/locked-alert';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { oauthAppsQueries } from '@/features/connections';
 import {
+  getDisplayPackageName,
   InstallPieceDialog,
   PieceIcon,
   piecesApi,
@@ -104,7 +103,11 @@ const PiecesListTab = () => {
             />
           ),
           cell: ({ row }) => {
-            return <div className="text-left">{row.original.name}</div>;
+            return (
+              <div className="text-left">
+                {getDisplayPackageName(row.original.name)}
+              </div>
+            );
           },
         },
         {
@@ -178,20 +181,6 @@ const PiecesListTab = () => {
 
   return (
     <>
-      {!isEnabled && (
-        <LockedAlert
-          title={t('Control Pieces')}
-          description={t(
-            "Show the pieces that matter most to your users and hide the ones you don't like.",
-          )}
-          button={
-            <RequestTrial
-              featureKey="ENTERPRISE_PIECES"
-              buttonVariant="basic"
-            />
-          }
-        />
-      )}
       <DataTable
         emptyStateTextTitle={t('No pieces found')}
         emptyStateTextDescription={t(

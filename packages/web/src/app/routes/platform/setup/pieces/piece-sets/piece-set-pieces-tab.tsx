@@ -32,7 +32,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { pieceSetMutations } from '@/features/piece-sets';
-import { PieceIcon, piecesHooks } from '@/features/pieces';
+import { getDisplayPackageName, PieceIcon, piecesHooks } from '@/features/pieces';
 import { cn } from '@/lib/utils';
 
 import { PieceComponentVisibilitySheet } from '../piece-component-visibility-sheet';
@@ -231,7 +231,9 @@ export const PieceSetPiecesTab = ({ pieceSet }: PieceSetPiecesTabProps) => {
             />
           ),
           cell: ({ row }) => (
-            <div className="text-left">{row.original.name}</div>
+            <div className="text-left">
+              {getDisplayPackageName(row.original.name)}
+            </div>
           ),
         },
         {

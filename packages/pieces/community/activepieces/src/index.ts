@@ -18,7 +18,7 @@ Activepieces Platform API is available under the Platform Edition.
 `;
 
 export const activepieces = createPiece({
-  displayName: 'Activepieces Platform',
+  displayName: 'Motomura Platform',
   description: 'Open source no-code business automation',
   auth: activePieceAuth,
   minimumSupportedRelease: '0.30.0',

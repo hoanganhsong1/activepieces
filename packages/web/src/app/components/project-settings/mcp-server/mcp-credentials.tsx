@@ -11,7 +11,7 @@ export function McpCredentials() {
 
   const jsonConfiguration = {
     mcpServers: {
-      activepieces: {
+      motomura: {
         url: serverUrl,
       },
     },
