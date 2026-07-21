@@ -153,6 +153,7 @@ RUN --mount=type=cache,target=/root/.bun/install/cache \
 
 # Copy frontend files
 COPY --from=build /usr/src/app/dist/packages/web ./dist/packages/web/
+RUN chmod -R a+rX ./dist/packages/web
 
 LABEL service=activepieces
 

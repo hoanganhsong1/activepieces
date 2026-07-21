@@ -1,6 +1,6 @@
 import { apId } from '@activepieces/core-utils';
 import { FlowOperationType, FlowTrigger } from '@activepieces/shared';
-import { t } from 'i18next';
+import { useTranslation } from 'react-i18next';
 import { Check, Loader2, Send, Sparkles, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
@@ -48,6 +48,7 @@ const SUGGESTIONS = [
 ];
 
 export const CopilotPanel = () => {
+  const { t, i18n } = useTranslation();
   const [flow, flowVersion, applyOperation, readonly, setRightSidebar] =
     useBuilderStateContext((state) => [
       state.flow,
@@ -97,6 +98,8 @@ export const CopilotPanel = () => {
         if (cancelled) return;
         if (Array.isArray(res.messages)) {
           setItems(res.messages as ChatItem[]);
+          // Open the panel already scrolled to the latest message.
+          scrollToBottom('auto');
         }
         loadedRef.current = true;
       })
@@ -108,6 +111,7 @@ export const CopilotPanel = () => {
     return () => {
       cancelled = true;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [flow.id]);
 
   // Persist the conversation after each change, once the initial load is done.
@@ -129,11 +133,15 @@ export const CopilotPanel = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [flow.id]);
 
-  const scrollToBottom = () => {
+  const scrollToBottom = (behavior: ScrollBehavior = 'smooth') => {
+    // Double rAF so the scroll runs after the newly rendered messages have
+    // been laid out — important on first open where the list just mounted.
     requestAnimationFrame(() => {
-      scrollRef.current?.scrollTo({
-        top: scrollRef.current.scrollHeight,
-        behavior: 'smooth',
+      requestAnimationFrame(() => {
+        scrollRef.current?.scrollTo({
+          top: scrollRef.current.scrollHeight,
+          behavior,
+        });
       });
     });
   };
@@ -170,6 +178,7 @@ export const CopilotPanel = () => {
           trigger: flowVersion.trigger,
         },
         messages: buildHistory(nextItems),
+        locale: i18n.language,
       });
 
       let assistantItem: ChatItem;

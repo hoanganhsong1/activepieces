@@ -7,7 +7,7 @@ import {
   UncategorizedFolderId,
 } from '@activepieces/shared';
 import { useQueryClient } from '@tanstack/react-query';
-import { t } from 'i18next';
+import { useTranslation } from 'react-i18next';
 import { ChevronDown, CircleHelp, HistoryIcon, Sparkles } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import {
@@ -49,6 +49,7 @@ import { flowCanvasConsts } from '../flow-canvas/utils/consts';
 import { BuilderFlowStatusSection } from './flow-status';
 
 export const BuilderHeader = () => {
+  const { t } = useTranslation();
   const [queryParams] = useSearchParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();

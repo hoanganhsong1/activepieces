@@ -6,7 +6,7 @@ import {
   UncategorizedFolderId,
 } from '@activepieces/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { t } from 'i18next';
+import i18n, { t } from 'i18next';
 import { useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -61,7 +61,10 @@ export function useAutomationsMutations(deps: MutationDeps) {
   const { mutate: generateFlowWithAi, isPending: isGeneratingFlow } =
     useMutation<PopulatedFlow, Error, { prompt: string; folderId?: string }>({
       mutationFn: async ({ prompt, folderId }) => {
-        const generated = await copilotApi.generateFlow({ prompt });
+        const generated = await copilotApi.generateFlow({
+          prompt,
+          locale: i18n.language,
+        });
         const createdFlow = await flowsApi.create({
           projectId,
           displayName: generated.displayName || t('Untitled'),

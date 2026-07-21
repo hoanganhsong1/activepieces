@@ -31,6 +31,7 @@ export const copilotController: FastifyPluginAsyncZod = async (app) => {
             projectId,
             prompt: request.body.prompt,
             model: request.body.model,
+            locale: request.body.locale,
         })
     })
 
@@ -43,6 +44,7 @@ export const copilotController: FastifyPluginAsyncZod = async (app) => {
             currentFlow: request.body.currentFlow,
             messages: request.body.messages,
             model: request.body.model,
+            locale: request.body.locale,
         })
     })
 
@@ -91,6 +93,7 @@ export const copilotController: FastifyPluginAsyncZod = async (app) => {
 const GenerateFlowRequest = z.object({
     prompt: z.string().min(1).max(4000),
     model: z.string().optional(),
+    locale: z.string().optional(),
 })
 
 const GenerateFlowOptions = {
@@ -119,6 +122,7 @@ const EditFlowRequest = z.object({
         .min(1)
         .max(60),
     model: z.string().optional(),
+    locale: z.string().optional(),
 })
 
 const EditFlowOptions = {

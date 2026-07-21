@@ -5,6 +5,8 @@ import { api } from '@/lib/api';
 export type GenerateFlowRequestBody = {
   prompt: string;
   model?: string;
+  /** UI language (e.g. 'ja'); the copilot replies in this language. */
+  locale?: string;
 };
 
 export type GenerateFlowResponse = {
@@ -27,6 +29,8 @@ export type EditFlowRequestBody = {
   };
   messages: CopilotChatMessage[];
   model?: string;
+  /** UI language (e.g. 'ja'); the copilot replies in this language. */
+  locale?: string;
 };
 
 export type EditFlowOption = {

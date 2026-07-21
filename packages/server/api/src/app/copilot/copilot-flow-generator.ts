@@ -24,8 +24,8 @@ import { pieceMetadataService } from '../pieces/metadata/piece-metadata-service'
  */
 const DEFAULT_MODEL_BY_PROVIDER: Partial<Record<AIProviderName, string>> = {
     [AIProviderName.OPENAI]: 'gpt-4o',
-    [AIProviderName.ANTHROPIC]: 'claude-3-7-sonnet-latest',
-    [AIProviderName.GOOGLE]: 'gemini-2.0-flash',
+    [AIProviderName.ANTHROPIC]: 'claude-sonnet-5',
+    [AIProviderName.GOOGLE]: 'gemini-2.5-flash',
     [AIProviderName.AZURE]: 'gpt-4o',
     [AIProviderName.BEDROCK]: 'anthropic.claude-3-5-sonnet-20240620-v1:0',
     [AIProviderName.MISTRAL]: 'mistral-large-latest',
@@ -36,8 +36,11 @@ const DEFAULT_MODEL_BY_PROVIDER: Partial<Record<AIProviderName, string>> = {
 }
 
 const PROCESS_RULES = `Process — follow it strictly:
-1. Call "search_pieces" one or more times to discover pieces whose triggers/actions match the capabilities needed. Use short capability phrases (e.g. "schedule", "send email", "google sheets", "http request").
-2. Call "get_piece_details" for every piece you intend to use, to read the exact trigger/action names and their input parameters. NEVER invent a pieceName, triggerName, actionName or input key — only use values returned by the tools.
+1. Call "search_pieces" one or more times to discover pieces whose triggers/actions match the capabilities needed.
+   - Search by CAPABILITY using 1-2 generic English keywords (e.g. "date", "current date", "schedule", "send email", "google sheets", "http request").
+   - IGNORE company, brand, project or person names in the request (e.g. "motomura") and any invented feature names the user made up (e.g. "Date Range Generator"): these are almost never real piece names. Translate the intent into a generic capability and search for that — for "get today's date" search "current date" or "date".
+   - If a search returns nothing, retry with a shorter, more generic single keyword before concluding. NEVER tell the user a piece does not exist until you have tried generic capability searches.
+2. Call "get_piece_details" for every piece you intend to use, to read the exact trigger/action names and their input parameters. search_pieces only lists a few suggested actions, so always open a promising piece with get_piece_details to see its FULL action list. NEVER invent a pieceName, triggerName, actionName or input key — only use values returned by the tools.
 
 Rules:
 - Prefer official pieces. If no event-based trigger fits, use the "@activepieces/piece-schedule" piece's "cron_expression" or "every_x_minutes" trigger.
@@ -60,6 +63,156 @@ You have one output tool, "respond". Call it exactly once per turn:
 - kind="message": you are only answering/clarifying and NOT changing the flow. Provide "message".
 
 Always prefer kind="question" over guessing when the request is ambiguous.`
+
+/**
+ * Supported UI languages, keyed by the locale code the web app sends. Used to
+ * tell the model which language to write user-facing text in.
+ */
+const LANGUAGE_NAMES: Record<string, string> = {
+    en: 'English',
+    ja: 'Japanese',
+    de: 'German',
+    fr: 'French',
+    es: 'Spanish',
+    nl: 'Dutch',
+    zh: 'Simplified Chinese',
+    'zh-TW': 'Traditional Chinese',
+    pt: 'Portuguese',
+    ru: 'Russian',
+    ar: 'Arabic',
+}
+
+// Normalize an incoming UI locale (e.g. "ja", "en-US") to a supported key.
+function normalizeLocale(locale: string | undefined): string | undefined {
+    if (isNil(locale) || locale === '') {
+        return undefined
+    }
+    if (locale in LANGUAGE_NAMES) {
+        return locale
+    }
+    const base = locale.split('-')[0]
+    return base in LANGUAGE_NAMES ? base : undefined
+}
+
+// System-prompt suffix instructing the model to write user-facing text in the
+// user's language. Identifiers (piece/trigger/action names and input keys) stay
+// exactly as returned by the tools so the generated flow remains valid.
+function languageInstruction(locale: string | undefined): string {
+    const key = normalizeLocale(locale)
+    if (isNil(key) || key === 'en') {
+        return ''
+    }
+    const language = LANGUAGE_NAMES[key]
+    return `\n\nLANGUAGE: Write ALL user-facing text in ${language} — the flow displayName, every step displayName, and (when editing) the summary, changes, message, question text and option labels. Do NOT translate identifiers: pieceName, triggerName, actionName and input parameter keys must stay exactly as returned by the tools.`
+}
+
+type CopilotMessageKey =
+    | 'noWorkflow'
+    | 'cannotProcess'
+    | 'whichOption'
+    | 'proposalHeader'
+    | 'proposedChange'
+    | 'needMoreDetail'
+
+// Localized fallbacks for the fixed messages the copilot emits when the model
+// omits its own text. AI-generated content is localized via the system prompt;
+// these cover the code-provided defaults. Unlisted locales fall back to English.
+const COPILOT_MESSAGES: Record<string, Record<CopilotMessageKey, string>> = {
+    en: {
+        noWorkflow: 'The AI did not produce a workflow. Try rephrasing your request with more detail.',
+        cannotProcess: 'I could not process that request. Please try again.',
+        whichOption: 'Which option would you like?',
+        proposalHeader: 'Here is the proposed change.',
+        proposedChange: 'Proposed change',
+        needMoreDetail: 'I need a bit more detail to change the flow.',
+    },
+    ja: {
+        noWorkflow: 'AIがワークフローを生成できませんでした。もう少し詳しく内容を記述して、もう一度お試しください。',
+        cannotProcess: 'リクエストを処理できませんでした。もう一度お試しください。',
+        whichOption: 'どのオプションを選択しますか？',
+        proposalHeader: '提案された変更は次のとおりです。',
+        proposedChange: '変更の提案',
+        needMoreDetail: 'フローを変更するには、もう少し詳しい情報が必要です。',
+    },
+    de: {
+        noWorkflow: 'Die KI hat keinen Flow erstellt. Formuliere deine Anfrage mit mehr Details neu.',
+        cannotProcess: 'Ich konnte diese Anfrage nicht verarbeiten. Bitte versuche es erneut.',
+        whichOption: 'Welche Option möchtest du?',
+        proposalHeader: 'Hier ist die vorgeschlagene Änderung.',
+        proposedChange: 'Vorgeschlagene Änderung',
+        needMoreDetail: 'Ich brauche noch etwas mehr Details, um den Flow zu ändern.',
+    },
+    es: {
+        noWorkflow: 'La IA no generó ningún flujo. Intenta reformular tu solicitud con más detalles.',
+        cannotProcess: 'No pude procesar esa solicitud. Inténtalo de nuevo.',
+        whichOption: '¿Qué opción prefieres?',
+        proposalHeader: 'Este es el cambio propuesto.',
+        proposedChange: 'Cambio propuesto',
+        needMoreDetail: 'Necesito un poco más de detalle para cambiar el flujo.',
+    },
+    fr: {
+        noWorkflow: 'L\'IA n\'a produit aucun flux. Essaie de reformuler ta demande avec plus de détails.',
+        cannotProcess: 'Je n\'ai pas pu traiter cette demande. Réessaie.',
+        whichOption: 'Quelle option souhaites-tu ?',
+        proposalHeader: 'Voici la modification proposée.',
+        proposedChange: 'Modification proposée',
+        needMoreDetail: 'J\'ai besoin d\'un peu plus de détails pour modifier le flux.',
+    },
+    nl: {
+        noWorkflow: 'De AI heeft geen flow gemaakt. Probeer je verzoek met meer details te herformuleren.',
+        cannotProcess: 'Ik kon dat verzoek niet verwerken. Probeer het opnieuw.',
+        whichOption: 'Welke optie wil je?',
+        proposalHeader: 'Dit is de voorgestelde wijziging.',
+        proposedChange: 'Voorgestelde wijziging',
+        needMoreDetail: 'Ik heb wat meer details nodig om de flow te wijzigen.',
+    },
+    pt: {
+        noWorkflow: 'A IA não gerou nenhum fluxo. Tente reformular sua solicitação com mais detalhes.',
+        cannotProcess: 'Não consegui processar essa solicitação. Tente novamente.',
+        whichOption: 'Qual opção você prefere?',
+        proposalHeader: 'Esta é a alteração proposta.',
+        proposedChange: 'Alteração proposta',
+        needMoreDetail: 'Preciso de um pouco mais de detalhes para alterar o fluxo.',
+    },
+    ru: {
+        noWorkflow: 'ИИ не создал поток. Попробуйте переформулировать запрос, добавив больше деталей.',
+        cannotProcess: 'Не удалось обработать этот запрос. Пожалуйста, попробуйте ещё раз.',
+        whichOption: 'Какой вариант вы предпочитаете?',
+        proposalHeader: 'Вот предлагаемое изменение.',
+        proposedChange: 'Предлагаемое изменение',
+        needMoreDetail: 'Мне нужно немного больше деталей, чтобы изменить поток.',
+    },
+    zh: {
+        noWorkflow: 'AI 未能生成流程。请尝试用更多细节重新描述你的请求。',
+        cannotProcess: '无法处理该请求。请重试。',
+        whichOption: '你想选择哪个选项？',
+        proposalHeader: '以下是建议的更改。',
+        proposedChange: '建议的更改',
+        needMoreDetail: '我需要更多细节才能更改流程。',
+    },
+    'zh-TW': {
+        noWorkflow: 'AI 未能產生流程。請嘗試以更多細節重新描述你的請求。',
+        cannotProcess: '無法處理該請求。請重試。',
+        whichOption: '你想選擇哪個選項？',
+        proposalHeader: '以下是建議的變更。',
+        proposedChange: '建議的變更',
+        needMoreDetail: '我需要更多細節才能變更流程。',
+    },
+    ar: {
+        noWorkflow: 'لم ينشئ الذكاء الاصطناعي أي تدفق. حاول إعادة صياغة طلبك بمزيد من التفاصيل.',
+        cannotProcess: 'تعذّر معالجة هذا الطلب. يرجى المحاولة مرة أخرى.',
+        whichOption: 'أي خيار تفضّل؟',
+        proposalHeader: 'هذا هو التغيير المقترح.',
+        proposedChange: 'التغيير المقترح',
+        needMoreDetail: 'أحتاج إلى مزيد من التفاصيل لتغيير التدفق.',
+    },
+}
+
+function copilotMessage(locale: string | undefined, key: CopilotMessageKey): string {
+    const norm = normalizeLocale(locale)
+    const table = (norm !== undefined && COPILOT_MESSAGES[norm]) || COPILOT_MESSAGES.en
+    return table[key]
+}
 
 const PlanTrigger = z.object({
     pieceName: z.string().describe('Exact piece name from the tools, e.g. "@activepieces/piece-schedule"'),
@@ -112,7 +265,7 @@ export type EditFlowResult =
     }
 
 export const copilotFlowGenerator = (log: FastifyBaseLogger) => ({
-    async generateFlow({ platformId, projectId, prompt, model: requestedModel }: GenerateFlowParams): Promise<GenerateFlowResult> {
+    async generateFlow({ platformId, projectId, prompt, model: requestedModel, locale }: GenerateFlowParams): Promise<GenerateFlowResult> {
         const model = await resolveModel({ platformId, requestedModel, log })
         const tools = createPieceTools({ platformId, projectId, log })
 
@@ -123,7 +276,7 @@ export const copilotFlowGenerator = (log: FastifyBaseLogger) => ({
 
         const result = await generateText({
             model,
-            system: GENERATE_SYSTEM_PROMPT,
+            system: GENERATE_SYSTEM_PROMPT + languageInstruction(locale),
             prompt,
             tools: { ...tools, submit_flow: submitFlow },
             stopWhen: stepCountIs(16),
@@ -133,7 +286,7 @@ export const copilotFlowGenerator = (log: FastifyBaseLogger) => ({
         if (isNil(submitCall)) {
             throw new ActivepiecesError({
                 code: ErrorCode.VALIDATION,
-                params: { message: 'The AI did not produce a workflow. Try rephrasing your request with more detail.' },
+                params: { message: copilotMessage(locale, 'noWorkflow') },
             })
         }
 
@@ -142,7 +295,7 @@ export const copilotFlowGenerator = (log: FastifyBaseLogger) => ({
         return { displayName: plan.displayName, trigger, schemaVersion: LATEST_FLOW_SCHEMA_VERSION }
     },
 
-    async editFlow({ platformId, projectId, currentFlow, messages, model: requestedModel }: EditFlowParams): Promise<EditFlowResult> {
+    async editFlow({ platformId, projectId, currentFlow, messages, model: requestedModel, locale }: EditFlowParams): Promise<EditFlowResult> {
         const model = await resolveModel({ platformId, requestedModel, log })
         const tools = createPieceTools({ platformId, projectId, log })
 
@@ -151,7 +304,7 @@ export const copilotFlowGenerator = (log: FastifyBaseLogger) => ({
             inputSchema: RespondInput,
         })
 
-        const system = `${EDIT_SYSTEM_PROMPT}\n\nCURRENT FLOW:\n${describeFlow(currentFlow)}`
+        const system = `${EDIT_SYSTEM_PROMPT}${languageInstruction(locale)}\n\nCURRENT FLOW:\n${describeFlow(currentFlow)}`
         const modelMessages: ModelMessage[] = messages.map((m) => ({
             role: m.role,
             content: m.content,
@@ -168,7 +321,7 @@ export const copilotFlowGenerator = (log: FastifyBaseLogger) => ({
         const respondCall = findToolCall(result, 'respond')
         if (isNil(respondCall)) {
             // Model answered in plain text without calling respond — treat text as a message.
-            return { kind: 'message', message: result.text || 'I could not process that request. Please try again.' }
+            return { kind: 'message', message: result.text || copilotMessage(locale, 'cannotProcess') }
         }
 
         // Be lenient: models sometimes omit `message` or `kind`, so we coerce
@@ -196,7 +349,7 @@ export const copilotFlowGenerator = (log: FastifyBaseLogger) => ({
         if (kind === 'question') {
             return {
                 kind: 'question',
-                message: message || 'Which option would you like?',
+                message: message || copilotMessage(locale, 'whichOption'),
                 options: raw.options ?? [],
             }
         }
@@ -207,18 +360,18 @@ export const copilotFlowGenerator = (log: FastifyBaseLogger) => ({
                 const trigger = await buildTriggerTree({ plan: planResult.data, platformId, projectId, log })
                 return {
                     kind: 'proposal',
-                    message: message || 'Here is the proposed change.',
-                    summary: raw.summary ?? (message || 'Proposed change'),
+                    message: message || copilotMessage(locale, 'proposalHeader'),
+                    summary: raw.summary ?? (message || copilotMessage(locale, 'proposedChange')),
                     changes: raw.changes ?? [],
                     displayName: planResult.data.displayName,
                     trigger,
                     schemaVersion: LATEST_FLOW_SCHEMA_VERSION,
                 }
             }
-            return { kind: 'message', message: message || 'I need a bit more detail to change the flow.' }
+            return { kind: 'message', message: message || copilotMessage(locale, 'needMoreDetail') }
         }
 
-        return { kind: 'message', message: message || 'I could not process that request. Please try again.' }
+        return { kind: 'message', message: message || copilotMessage(locale, 'cannotProcess') }
     },
 })
 
@@ -227,6 +380,7 @@ type GenerateFlowParams = {
     projectId: string
     prompt: string
     model?: string
+    locale?: string
 }
 
 type EditFlowParams = {
@@ -235,6 +389,7 @@ type EditFlowParams = {
     currentFlow: { displayName: string, trigger: unknown }
     messages: Array<{ role: 'user' | 'assistant', content: string }>
     model?: string
+    locale?: string
 }
 
 async function resolveModel({ platformId, requestedModel, log }: {
@@ -273,18 +428,39 @@ function createPieceTools({ platformId, projectId, log }: {
     log: FastifyBaseLogger
 }): ToolSet {
     const searchPieces = tool({
-        description: 'Search the installed Activepieces catalog. Returns pieces whose triggers/actions match the query, with their most relevant trigger and action names.',
+        description: 'Search the installed Activepieces catalog with 1-2 generic capability keywords (e.g. "date", "send email") — NOT brand names or full sentences. Returns matching pieces with their most relevant trigger and action names.',
         inputSchema: z.object({
-            query: z.string().describe('A capability to search for, e.g. "send email" or "google sheets"'),
+            query: z.string().describe('A generic capability keyword, e.g. "date", "send email" or "google sheets". Avoid brand/company names and invented feature names.'),
         }),
         execute: async ({ query }) => {
-            const pieces = await pieceMetadataService(log).list({
+            const runSearch = (searchQuery: string) => pieceMetadataService(log).list({
                 platformId,
                 projectId,
-                searchQuery: query,
+                searchQuery,
                 suggestionType: SuggestionType.ACTION_AND_TRIGGER,
                 includeHidden: false,
             })
+            let pieces = await runSearch(query)
+            // A whole-sentence / brand-name / invented-name query often matches
+            // nothing under the strict fuzzy search. Fall back to searching each
+            // meaningful word on its own and union the hits so a relevant piece
+            // (and its suggested actions) still surfaces.
+            if (pieces.length === 0) {
+                const tokens = Array.from(new Set(
+                    query.toLowerCase().split(/\s+/).filter((token) => token.length >= 3),
+                ))
+                const seen = new Set<string>()
+                const unioned: Awaited<ReturnType<typeof runSearch>> = []
+                for (const token of tokens) {
+                    for (const piece of await runSearch(token)) {
+                        if (!seen.has(piece.name)) {
+                            seen.add(piece.name)
+                            unioned.push(piece)
+                        }
+                    }
+                }
+                pieces = unioned
+            }
             return pieces.slice(0, 8).map((piece) => ({
                 pieceName: piece.name,
                 displayName: piece.displayName,

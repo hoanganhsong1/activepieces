@@ -76,7 +76,7 @@ spec:
 
       containers:
         - name: "container"
-          image: asia-northeast1-docker.pkg.dev/motomuraplatform/motomura-io/motomura-io:v15
+          image: asia-northeast1-docker.pkg.dev/motomuraplatform/motomura-io/motomura-io:v20
           imagePullPolicy: Always
           resources:
             requests:
@@ -159,8 +159,8 @@ spec:
             # ---------- URLs ----------
             - name: AP_FRONTEND_URL
               value: "https://motomura.io"
-            # - name: AP_WEBHOOK_URL
-            #   value: "http://localhost:3000"
+            - name: AP_WEBHOOK_URL
+              value: "https://motomura.io"
 
             # ---------- Postgres (via cloud-sql-proxy sidecar) ----------
             - name: AP_DB_TYPE

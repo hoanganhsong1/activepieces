@@ -1,4 +1,4 @@
-import { t } from 'i18next';
+import { useTranslation } from 'react-i18next';
 import { Loader2, Sparkles } from 'lucide-react';
 import { useState } from 'react';
 
@@ -32,6 +32,7 @@ export const CreateFlowWithAiDialog = ({
   isGenerating,
   onSubmit,
 }: CreateFlowWithAiDialogProps) => {
+  const { t } = useTranslation();
   const [prompt, setPrompt] = useState('');
 
   const trimmed = prompt.trim();
@@ -91,10 +92,10 @@ export const CreateFlowWithAiDialog = ({
                   key={example}
                   type="button"
                   disabled={isGenerating}
-                  onClick={() => setPrompt(example)}
+                  onClick={() => setPrompt(t(example))}
                   className="text-left text-xs text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
                 >
-                  • {example}
+                  • {t(example)}
                 </button>
               ))}
             </div>
