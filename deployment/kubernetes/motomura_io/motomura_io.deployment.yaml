@@ -205,21 +205,29 @@ spec:
               value: "OFFICIAL_AUTO"
             - name: AP_LOAD_TRANSLATIONS_FOR_DEV_PIECES
               value: "true"
-            - name: AP_MAILER_HOST
+            # NOTE: renamed from AP_MAILER_* -> AP_SMTP_* (2026-07-21).
+            # Activepieces reads env vars as "AP_" + AppSystemProp, and the
+            # SMTP props are named SMTP_HOST/SMTP_PORT/SMTP_USERNAME/
+            # SMTP_PASSWORD/SMTP_SENDER_EMAIL/SMTP_SENDER_NAME (see
+            # packages/server/api/src/app/helper/system/system-props.ts).
+            # AP_MAILER_* was never read by the app, so isSmtpConfigured()
+            # was always false and no email (invites, alerts, etc.) could
+            # send, regardless of edition.
+            - name: AP_SMTP_HOST
               value: "smtp.sendgrid.net"
-            - name: AP_MAILER_PORT
+            - name: AP_SMTP_PORT
               value: "587"                       # 587 = STARTTLS, 465 = SSL
-            - name: AP_MAILER_USER
+            - name: AP_SMTP_USERNAME
               value: "apikey"
-            - name: AP_MAILER_SENDER_EMAIL
-              value: "noreply@motomura.io"
-            - name: AP_MAILER_SENDER_NAME
+            - name: AP_SMTP_SENDER_EMAIL
+              value: "noreply@nippou.jp"
+            - name: AP_SMTP_SENDER_NAME
               value: "Motomura"
             - name: AP_DEV_PIECES
               value: "chatwork,motomura,kingoftime"
             - name: AP_TITLE
               value: "MOTOMURA"
-            - name: AP_MAILER_PASSWORD
+            - name: AP_SMTP_PASSWORD
               valueFrom:
                 secretKeyRef:
                   name: motomura-io-secret
