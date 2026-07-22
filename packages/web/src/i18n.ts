@@ -11,7 +11,7 @@ i18n
   .use(LanguageDetector)
   .use(initReactI18next)
   .init({
-    fallbackLng: 'en',
+    fallbackLng: LocalesEnum.JAPANESE,
     debug: false,
     interpolation: {
       escapeValue: false, // not needed for react as it escapes by default
@@ -20,5 +20,12 @@ i18n
     keySeparator: false,
     nsSeparator: false,
     returnEmptyString: false,
+    detection: {
+      // Only respect an explicit choice (URL param, cookie, or a previous
+      // manual selection). Do not auto-detect from the browser/OS locale,
+      // so first-time visitors always land on Japanese by default.
+      order: ['querystring', 'cookie', 'localStorage', 'sessionStorage'],
+      caches: ['localStorage', 'cookie'],
+    },
   });
 export default i18n;

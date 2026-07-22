@@ -1,11 +1,11 @@
 docker builder prune -f
 docker build --no-cache --platform linux/amd64,linux/arm64 -t motomura-io .
-docker tag motomura-io asia-northeast1-docker.pkg.dev/motomuraplatform/motomura-io/motomura-io:v20
-docker push asia-northeast1-docker.pkg.dev/motomuraplatform/motomura-io/motomura-io:v20
+docker tag motomura-io asia-northeast1-docker.pkg.dev/motomuraplatform/motomura-io/motomura-io:v22
+docker push asia-northeast1-docker.pkg.dev/motomuraplatform/motomura-io/motomura-io:v22
 
 openssl rand -hex 32
 
-kubectl -n motomura rollout restart auto-motomura-app
+kubectl -n motomura rollout restart motomura-io
 
 kubectl get managedcertificate motomura-io-cert --namespace motomura
 kubectl describe managedcertificate motomura-io-cert --namespace motomura

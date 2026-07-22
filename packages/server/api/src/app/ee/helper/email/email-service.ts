@@ -144,10 +144,6 @@ export const emailService = (log: FastifyBaseLogger) => ({
     },
 
     async sendOtp({ platformId, userIdentity, otp, type }: SendOtpArgs): Promise<void> {
-        if (EDITION_IS_NOT_PAID) {
-            return
-        }
-
         if (userIdentity.verified && type === OtpType.EMAIL_VERIFICATION) {
             return
         }
