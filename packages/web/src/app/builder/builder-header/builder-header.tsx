@@ -59,12 +59,14 @@ export const BuilderHeader = () => {
     moveToFolderClientSide,
     applyOperation,
     setRightSidebar,
+    setCopilotFloating,
   ] = useBuilderStateContext((state) => [
     state.flow,
     state.flowVersion,
     state.moveToFolderClientSide,
     state.applyOperation,
     state.setRightSidebar,
+    state.setCopilotFloating,
   ]);
 
   const { embedState } = useEmbedding();
@@ -172,7 +174,12 @@ export const BuilderHeader = () => {
     <div className="flex items-center justify-center gap-4">
       <Button
         variant="ghost"
-        onClick={() => setRightSidebar(RightSideBarType.COPILOT)}
+        onClick={() => {
+          // Always bring the copilot back into the sidebar, even if it was
+          // left floating as a dialog.
+          setCopilotFloating(false);
+          setRightSidebar(RightSideBarType.COPILOT);
+        }}
         className="gap-2 px-2"
       >
         <Sparkles className="w-4 h-4" />

@@ -56,6 +56,7 @@ const BuilderPage = () => {
     isStepDataPanelOpen,
     setStepDataPanelView,
     setStepDataPanelOpen,
+    isCopilotFloating,
   ] = useBuilderStateContext((state) => [
     state.flowVersion,
     state.rightSidebar,
@@ -69,6 +70,7 @@ const BuilderPage = () => {
     state.isStepDataPanelOpen,
     state.setStepDataPanelView,
     state.setStepDataPanelOpen,
+    state.isCopilotFloating,
   ]);
   useEffect(() => {
     return () => {
@@ -235,7 +237,11 @@ const BuilderPage = () => {
               )}
             {rightSidebar === RightSideBarType.RUNS && <RunsList />}
             {rightSidebar === RightSideBarType.VERSIONS && <FlowVersionsList />}
-            {rightSidebar === RightSideBarType.COPILOT && <CopilotPanel />}
+            {/* Kept mounted while floating: the copilot then portals itself
+            out of the sidebar into a dialog, so it survives switching the
+            sidebar to step settings and keeps its chat state. */}
+            {(rightSidebar === RightSideBarType.COPILOT ||
+              isCopilotFloating) && <CopilotPanel />}
           </div>
         </ResizablePanel>
       </ResizablePanelGroup>

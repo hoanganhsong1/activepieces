@@ -1,7 +1,7 @@
 docker builder prune -f
 docker build --no-cache --platform linux/amd64,linux/arm64 -t motomura-io .
-docker tag motomura-io asia-northeast1-docker.pkg.dev/motomuraplatform/motomura-io/motomura-io:v22
-docker push asia-northeast1-docker.pkg.dev/motomuraplatform/motomura-io/motomura-io:v22
+docker tag motomura-io asia-northeast1-docker.pkg.dev/motomuraplatform/motomura-io-v1/motomura-io-v1:v1
+docker push asia-northeast1-docker.pkg.dev/motomuraplatform/motomura-io-v1/motomura-io-v1:v1
 
 openssl rand -hex 32
 

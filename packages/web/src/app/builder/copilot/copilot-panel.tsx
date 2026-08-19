@@ -1,8 +1,22 @@
 import { apId } from '@activepieces/core-utils';
 import { FlowOperationType, FlowTrigger } from '@activepieces/shared';
+import {
+  Check,
+  Loader2,
+  PanelRight,
+  PictureInPicture2,
+  Send,
+  Sparkles,
+  X,
+} from 'lucide-react';
+import {
+  PointerEvent as ReactPointerEvent,
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
+import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
-import { Check, Loader2, Send, Sparkles, X } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
 import { useBuilderStateContext } from '@/app/builder/builder-hooks';
@@ -10,6 +24,11 @@ import { RightSideBarType } from '@/app/builder/types';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Textarea } from '@/components/ui/textarea';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import {
   copilotApi,
   CopilotChatMessage,
@@ -47,21 +66,69 @@ const SUGGESTIONS = [
   'Add error handling so it keeps going on failure',
 ];
 
+// Default size of the floating dialog. The user can resize it from its bottom
+// right corner afterwards.
+const FLOATING_WIDTH_PX = 460;
+const FLOATING_HEIGHT_PX = 620;
+const FLOATING_MIN_WIDTH_PX = 320;
+const FLOATING_MIN_HEIGHT_PX = 320;
+const FLOATING_MARGIN_PX = 16;
+
+type Point = { x: number; y: number };
+type Size = { width: number; height: number };
+
+// Keeps the dialog fully inside the viewport, so it can never be dragged (or
+// resized, or shrunk by a window resize) out of reach.
+const clampToViewport = (position: Point, size: Size): Point => ({
+  x: Math.min(
+    Math.max(position.x, 0),
+    Math.max(window.innerWidth - size.width, 0),
+  ),
+  y: Math.min(
+    Math.max(position.y, 0),
+    Math.max(window.innerHeight - size.height, 0),
+  ),
+});
+
 export const CopilotPanel = () => {
   const { t, i18n } = useTranslation();
-  const [flow, flowVersion, applyOperation, readonly, setRightSidebar] =
-    useBuilderStateContext((state) => [
-      state.flow,
-      state.flowVersion,
-      state.applyOperation,
-      state.readonly,
-      state.setRightSidebar,
-    ]);
+  const [
+    flow,
+    flowVersion,
+    applyOperation,
+    readonly,
+    setRightSidebar,
+    isFloating,
+    setCopilotFloating,
+  ] = useBuilderStateContext((state) => [
+    state.flow,
+    state.flowVersion,
+    state.applyOperation,
+    state.readonly,
+    state.setRightSidebar,
+    state.isCopilotFloating,
+    state.setCopilotFloating,
+  ]);
 
   const [items, setItems] = useState<ChatItem[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [dialogPosition, setDialogPosition] = useState<Point>({ x: 0, y: 0 });
+  const [dialogSize, setDialogSize] = useState<Size>({
+    width: FLOATING_WIDTH_PX,
+    height: FLOATING_HEIGHT_PX,
+  });
+  const [isDragging, setIsDragging] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  // The panel as it sits docked in the sidebar — measured so the dialog opens
+  // roughly where the docked panel was.
+  const containerRef = useRef<HTMLDivElement>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const dragRef = useRef<{
+    pointerId: number;
+    offsetX: number;
+    offsetY: number;
+  } | null>(null);
   // Prevents the persist effect from firing (and overwriting saved history)
   // before the initial load for this flow has completed.
   const loadedRef = useRef(false);
@@ -146,13 +213,120 @@ export const CopilotPanel = () => {
     });
   };
 
+  // Undock: the chat leaves the sidebar and becomes a floating window that
+  // stays above the rest of the builder, so the canvas gets its space back and
+  // the flow stays editable while you chat.
+  const openAsDialog = () => {
+    const size = {
+      width: Math.min(
+        FLOATING_WIDTH_PX,
+        window.innerWidth - FLOATING_MARGIN_PX,
+      ),
+      height: Math.min(
+        FLOATING_HEIGHT_PX,
+        window.innerHeight - FLOATING_MARGIN_PX * 2,
+      ),
+    };
+    // Open it where the docked panel was, so it does not jump across the screen.
+    const dockedRect = containerRef.current?.getBoundingClientRect();
+    const origin = {
+      x:
+        (dockedRect?.right ?? window.innerWidth) -
+        size.width -
+        FLOATING_MARGIN_PX,
+      y: (dockedRect?.top ?? FLOATING_MARGIN_PX) + FLOATING_MARGIN_PX,
+    };
+    setDialogSize(size);
+    setDialogPosition(clampToViewport(origin, size));
+    setCopilotFloating(true);
+    // Give the sidebar space back to the canvas while the dialog is floating.
+    setRightSidebar(RightSideBarType.NONE);
+  };
+
+  const dockToSidebar = () => {
+    setCopilotFloating(false);
+    setRightSidebar(RightSideBarType.COPILOT);
+  };
+
+  const closePanel = () => {
+    if (isFloating) {
+      setCopilotFloating(false);
+      return;
+    }
+    setRightSidebar(RightSideBarType.NONE);
+  };
+
+  const startDragging = (event: ReactPointerEvent<HTMLDivElement>) => {
+    // Let the header buttons keep working — only bare header area drags.
+    if (event.button !== 0 || (event.target as HTMLElement).closest('button')) {
+      return;
+    }
+    event.currentTarget.setPointerCapture(event.pointerId);
+    dragRef.current = {
+      pointerId: event.pointerId,
+      offsetX: event.clientX - dialogPosition.x,
+      offsetY: event.clientY - dialogPosition.y,
+    };
+    setIsDragging(true);
+  };
+
+  const onDragging = (event: ReactPointerEvent<HTMLDivElement>) => {
+    const drag = dragRef.current;
+    if (!drag || drag.pointerId !== event.pointerId) return;
+    setDialogPosition(
+      clampToViewport(
+        { x: event.clientX - drag.offsetX, y: event.clientY - drag.offsetY },
+        dialogSize,
+      ),
+    );
+  };
+
+  const stopDragging = (event: ReactPointerEvent<HTMLDivElement>) => {
+    const drag = dragRef.current;
+    if (!drag || drag.pointerId !== event.pointerId) return;
+    event.currentTarget.releasePointerCapture(event.pointerId);
+    dragRef.current = null;
+    setIsDragging(false);
+  };
+
+  // The dialog is resizable from its corner (CSS resize), so mirror whatever
+  // size the browser gives it — the drag clamping needs the real size.
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    if (!isFloating || !dialog) return;
+    const observer = new ResizeObserver(() => {
+      // Border box, not contentRect — feeding the content size back into the
+      // style would shrink the dialog by its border on every pass.
+      const { width, height } = dialog.getBoundingClientRect();
+      setDialogSize((previous) =>
+        previous.width === width && previous.height === height
+          ? previous
+          : { width, height },
+      );
+    });
+    observer.observe(dialog);
+    return () => observer.disconnect();
+  }, [isFloating]);
+
+  // A smaller window must not leave the dialog stranded off-screen.
+  useEffect(() => {
+    if (!isFloating) return;
+    const onResize = () =>
+      setDialogPosition((previous) => clampToViewport(previous, dialogSize));
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, [isFloating, dialogSize]);
+
+  // Switching between docked and floating re-parents the chat in the DOM.
+  useEffect(() => {
+    scrollToBottom('auto');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isFloating]);
+
   const buildHistory = (nextItems: ChatItem[]): CopilotChatMessage[] =>
     nextItems.map((item) => ({
       role: item.role,
-      content:
-        item.kind === 'proposal'
-          ? item.summary || item.text
-          : item.text,
+      content: item.kind === 'proposal' ? item.summary || item.text : item.text,
     }));
 
   const sendMessage = async (text: string) => {
@@ -278,21 +452,57 @@ export const CopilotPanel = () => {
     );
   };
 
-  return (
+  const toggleLabel = isFloating
+    ? t('Dock to sidebar')
+    : t('Open as floating window');
+
+  const panelContent = (
     <div className="flex h-full w-full flex-col bg-background">
-      <div className="flex items-center justify-between border-b px-4 py-3">
+      <div
+        onPointerDown={isFloating ? startDragging : undefined}
+        onPointerMove={isFloating ? onDragging : undefined}
+        onPointerUp={isFloating ? stopDragging : undefined}
+        onPointerCancel={isFloating ? stopDragging : undefined}
+        className={cn(
+          'flex items-center justify-between border-b px-4 py-3',
+          isFloating && 'touch-none select-none',
+          isFloating && (isDragging ? 'cursor-grabbing' : 'cursor-grab'),
+        )}
+      >
         <div className="flex items-center gap-2">
           <Sparkles className="h-4 w-4 text-primary" />
           <span className="text-sm font-medium">{t('AI Copilot')}</span>
         </div>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-7 w-7"
-          onClick={() => setRightSidebar(RightSideBarType.NONE)}
-        >
-          <X className="h-4 w-4" />
-        </Button>
+        <div className="flex items-center gap-1">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7"
+                aria-label={toggleLabel}
+                aria-pressed={isFloating}
+                onClick={isFloating ? dockToSidebar : openAsDialog}
+              >
+                {isFloating ? (
+                  <PanelRight className="h-4 w-4" />
+                ) : (
+                  <PictureInPicture2 className="h-4 w-4" />
+                )}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">{toggleLabel}</TooltipContent>
+          </Tooltip>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7"
+            aria-label={t('Close')}
+            onClick={closePanel}
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
 
       <ScrollArea className="flex-1" viewPortRef={scrollRef}>
@@ -322,7 +532,10 @@ export const CopilotPanel = () => {
           {items.map((item) => (
             <div
               key={item.id}
-              className={cn('flex', item.role === 'user' ? 'justify-end' : 'justify-start')}
+              className={cn(
+                'flex',
+                item.role === 'user' ? 'justify-end' : 'justify-start',
+              )}
             >
               <div
                 className={cn(
@@ -436,6 +649,40 @@ export const CopilotPanel = () => {
           </Button>
         </div>
       </div>
+    </div>
+  );
+
+  if (isFloating) {
+    // Rendered on <body> so no builder panel can stack on top of it, and kept
+    // non-modal so the canvas underneath stays clickable while you chat.
+    return createPortal(
+      <div
+        ref={dialogRef}
+        role="dialog"
+        aria-label={t('AI Copilot')}
+        className="fixed z-[100] flex flex-col overflow-hidden rounded-lg border bg-background shadow-2xl duration-150 animate-in fade-in zoom-in-95"
+        style={{
+          left: dialogPosition.x,
+          top: dialogPosition.y,
+          width: dialogSize.width,
+          height: dialogSize.height,
+          minWidth: FLOATING_MIN_WIDTH_PX,
+          minHeight: FLOATING_MIN_HEIGHT_PX,
+          maxWidth: '100vw',
+          maxHeight: '100vh',
+          // Native corner grip — drag it to resize the dialog.
+          resize: 'both',
+        }}
+      >
+        {panelContent}
+      </div>,
+      document.body,
+    );
+  }
+
+  return (
+    <div ref={containerRef} className="h-full w-full">
+      {panelContent}
     </div>
   );
 };

@@ -79,7 +79,7 @@ spec:
 
       containers:
         - name: "container"
-          image: asia-northeast1-docker.pkg.dev/motomuraplatform/motomura-io/motomura-io:v22
+          image: asia-northeast1-docker.pkg.dev/motomuraplatform/motomura-io-v1/motomura-io-v1:v1
           imagePullPolicy: IfNotPresent
           # resizePolicy:
           # - resourceName: cpu

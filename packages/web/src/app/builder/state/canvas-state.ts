@@ -17,6 +17,10 @@ export type CanvasState = {
   readonly: boolean;
   hideTestWidget: boolean;
   rightSidebar: RightSideBarType;
+  // When true the AI copilot has been undocked from the right sidebar and is
+  // shown as a floating dialog above the builder, whatever the sidebar shows.
+  isCopilotFloating: boolean;
+  setCopilotFloating: (isCopilotFloating: boolean) => void;
   selectedStep: string | null;
   activeDraggingStep: string | null;
   selectedBranchIndex: number | null;
@@ -176,6 +180,9 @@ export const createCanvasState = (
         selectedBranchIndex: null,
       })),
     setRightSidebar: (rightSidebar: RightSideBarType) => set({ rightSidebar }),
+    isCopilotFloating: false,
+    setCopilotFloating: (isCopilotFloating: boolean) =>
+      set({ isCopilotFloating }),
     selectedBranchIndex: null,
     selectedNodes: [],
     setSelectedNodes: (nodes) => {
