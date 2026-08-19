@@ -81,14 +81,19 @@ spec:
         - name: "container"
           image: asia-northeast1-docker.pkg.dev/motomuraplatform/motomura-io/motomura-io:v22
           imagePullPolicy: IfNotPresent
+          # resizePolicy:
+          # - resourceName: cpu
+          #   restartPolicy: NotRequired
+          # - resourceName: memory
+          #   restartPolicy: NotRequired
           resources:
             requests:
               cpu: "500m"
-              memory: "1Gi"
+              memory: "1.5Gi"
 
             limits:
               cpu: "1"
-              memory: "2Gi"
+              memory: "3Gi"
           ports:
             - containerPort: 80
           env:
