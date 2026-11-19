@@ -5,6 +5,15 @@ ENV LANG=en_US.UTF-8 \
     LANGUAGE=en_US:en \
     LC_ALL=en_US.UTF-8
 
+# redis-memory-server is a TEST-ONLY dependency, but it is listed in
+# package.json "trustedDependencies", so bun runs its postinstall hook. That
+# hook downloads the Redis source and compiles it (plus the RedisBloom /
+# RediSearch / RedisJSON modules), which needs cmake + pkg-config and fails the
+# image build. Nothing in the shipped image ever starts an in-memory Redis, so
+# skip the download entirely; tests fetch the binary lazily on first use.
+# See scripts/postinstall.js in redis-memory-server.
+ENV REDISMS_DISABLE_POSTINSTALL=1
+
 # Install all system dependencies in a single layer with cache mounts
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt,sharing=locked \
